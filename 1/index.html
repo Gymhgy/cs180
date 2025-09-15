@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 1: Prokudin-Gorskii Image Alignment</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    h1, h2, h3 { margin-top: 2em; }
+    .photos { display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 1em; }
+    img { max-width: 300px; height: auto; border: 1px solid #ccc; }
+    .caption { font-size: 0.9em; color: #555; }
+    .offsets { font-size: 0.9em; color: #333; margin-bottom: 1em; }
+    .section { margin-bottom: 2em; }
+  </style>
+</head>
+<body>
+  <h1>Project 1: Prokudin-Gorskii Image Alignment</h1>
+  <p>
+    In this project, I implemented single-scale and multi-scale pyramid alignment 
+    algorithms to reconstruct color images from the Prokudin-Gorskii collection. 
+  </p>
+
+  <h2>Algorithm Overview</h2>
+  <p>
+    The core of my approach is to align the green and blue channels to the red channel 
+    by maximizing the normalized cross-correlation (NCC) score. I ignore the outer 10% of the image
+    to avoid border artifacts influencing alignment.
+    For smaller images, I used a single-scale alignment method, while for larger images, 
+    I implemented a multi-scale pyramid approach to efficiently find the best alignment.
+    Additionally, I included preprocessing and postprocessing steps to handle border artifacts,
+    which will be explained in the bells and whistles section.
+  </p>
+
+  <div class="section">
+    <h2>Single-Scale Alignment</h2>
+    <p>
+      For smaller images (less than 1500 pixels on the longest side), I used a single-scale alignment approach,
+      shifting the green and blue channels relative to the red channel within a search window of ±15 pixels in both x and y directions.
+    </p>
+    <div class="photos">
+      <div>
+        <img src="out/cathedral.jpg">
+        <div class="caption">cathedral.jpg (g: -1, -7; b: -3, -12)</div>
+      </div>
+      <div>
+        <img src="out/monastery.jpg">
+        <div class="caption">monastery.jpg (g: -1, -6; b: -2, -3)</div>
+      </div>
+      <div>
+        <img src="out/tobolsk.jpg">
+        <div class="caption">tobolsk.jpg (g: -1, -4; b: -3, -6)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Multi-Scale Pyramid Alignment</h2>
+    <p>
+      For higher-resolution images, I implemented a multi-scale pyramid approach.
+      I created an image pyramid by repeatedly gaussian blurring and 
+      downsampling the image by a factor of 2.
+      Starting from the coarsest level, I aligned the channels and propagated the offsets down to finer levels by doubling them.
+      At each level, I refined the offsets by searching within a ±2 pixel window, just to be safe,
+      although ±1 would likely suffice through binary search properties.
+      Below are some results from this approach:
+    </p>
+    <div class="photos">
+      <div>
+      <img src="out/church.jpg">
+      <div class="caption">church.tif (g: 8, -33; b: 4, -58)</div>
+      </div>
+      <div>
+      <img src="out/emir.jpg">
+      <div class="caption">emir.tif (g: -17, -57; b: -59, -102)</div>
+      </div>
+      <div>
+      <img src="out/harvesters.jpg">
+      <div class="caption">harvesters.tif (g: 3, -65; b: -13, -124)</div>
+      </div>
+      <div>
+      <img src="out/icon.jpg">
+      <div class="caption">icon.tif (g: -5, -48; b: -23, -89)</div>
+      </div>
+      <div>
+      <img src="out/italil.jpg">
+      <div class="caption">italil.tif (g: -15, -38; b: -35, -76)</div>
+      </div>
+      <div>
+      <img src="out/lastochikino.jpg">
+      <div class="caption">lastochikino.tif (g: 7, -78; b: 9, -75)</div>
+      </div>
+      <div>
+      <img src="out/lugano.jpg">
+      <div class="caption">lugano.tif (g: 12, -52; b: 29, -92)</div>
+      </div>
+      <div>
+      <img src="out/melons.jpg">
+      <div class="caption">melons.tif (g: -4, -96; b: -13, -179)</div>
+      </div>
+      <div>
+      <img src="out/self_portrait.jpg">
+      <div class="caption">self_portrait.tif (g: -8, -98; b: -36, -176)</div>
+      </div>
+      <div>
+      <img src="out/siren.jpg">
+      <div class="caption">siren.tif (g: 18, -47; b: 25, -96)</div>
+      </div>
+      <div>
+      <img src="out/three_generations.jpg">
+      <div class="caption">three_generations.tif (g: 3, -58; b: -11, -111)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Results on Prokudin-Gorskii Collection Images</h2>
+    <p>
+      Here are some results on images I downloaded from the Prokudin-Gorskii collection:
+    </p>
+    <div class="photos">
+      <div>
+        <img src="out/garden.jpg">
+        <div class="caption">emir.tif (g: -17, -57; b: -59, -102)</div>
+      </div>
+      <div>
+        <img src="out/conservatory.jpg">
+        <div class="caption">harvesters.tif (g: 3, -65; b: -13, -124)</div>
+      </div>
+      <div>
+        <img src="out/capri.jpg">
+        <div class="caption">self_portrait.tif (g: -8, -98; b: -36, -176)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section">
+    <h2>Bells and Whistles</h2>
+    <p>
+      I implemented automatic cropping / artifact removal enhance alignment quality:
+    </p>
+    <ul>
+      <li><strong>Removal of white border before alignment (preprocess):</strong>
+        I go row by row, removing rows from the top and bottom whose mean pixel intensity is above a certain threshold (0.95).
+        The same is done for columns.
+      </li>
+      <li><strong>Artifact removal after alignment (postprocess):</strong>
+        To remove artifacts / other solid borders, I defined the "goodeness" of pixel as
+        <code>
+          max((r-g)^2 + (g-b)^2 + (b-r)^2, 0 if 0.2 < (r+g+b)/3 < 0.8 else 1)
+        </code>.
+        I then take the mean goodness per row/column, and remove rows/columns
+        from the edges until the mean goodness exceeds a threshold (0.5).
+      </li>
+    </ul>
+    <h3>Before and After</h3>
+    <div class="photos">
+      <div style="display: flex; gap: 1em; align-items: flex-start;">
+        <div>
+          <img src="out/emir_before.jpg">
+          <div class="caption">emir.jpg (before)</div>
+        </div>
+        <div>
+          <img src="out/emir.jpg">
+          <div class="caption">emir.jpg (after)</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1em; align-items: flex-start;">
+        <div>
+          <img src="out/church_before.jpg">
+          <div class="caption">church.jpg (before)</div>
+        </div>
+        <div>
+          <img src="out/church.jpg">
+          <div class="caption">church.jpg (after)</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1em; align-items: flex-start;">
+        <div>
+          <img src="out/tobolsk_before.jpg">
+          <div class="caption">tobolsk.jpg (before)</div>
+        </div>
+        <div>
+          <img src="out/tobolsk.jpg">
+          <div class="caption">tobolsk.jpg (after)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
