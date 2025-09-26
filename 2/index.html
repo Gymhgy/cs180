@@ -295,7 +295,7 @@
   </div>
 
   <p>
-    We apply a low-pass filter to Flag Bart and a high-pass filter to Flag RSF1. The cutoff frequency controls how much detail we keep from each image.
+    We apply a low-pass filter to the Bart flag and a high-pass filter to the RSF flag. The cutoff frequency controls how much detail we keep from each image.
     I also added an additional parameter <code>c</code> to control how much of the lower frequencies to remove, by doing
     <code>high = im - c * blur</code>
   </p>
@@ -412,12 +412,13 @@
 
     <div style="size: 50vw;">
       <img src="out/apple_orange_laplace_fig.png"  class="big-pic">
-      <div class="caption">Apple + Orange: Gaussian & Laplacian stacks and blended reconstructions (Figure 3.42 (a)–(l) reproduction)</div>
+      <div class="caption">Apple + Orange: Gaussian & Laplacian stacks and blended reconstructions (Figure 3.42 reproduction)</div>
     </div>
 
     <h3>Standard Blend</h3>
     <p>
-      A second example blends the following with a simple horizontal mask.
+      A second example blends the following with a simple horizontal mask. I wanted to take the pose from the guy on the left
+      and combine it with the guy on the right.
       We show the originals and the final multi-resolution blended result.
     </p>
     <div class="photorow">
