@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 2: </title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    h1, h2, h3 { margin-top: 2em; }
+    .photos { display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 1em; }
+    img { max-width: 300px; height: auto; border: 1px solid #ccc; }
+    .big-pic { max-width: 50vw; }
+    .caption { font-size: 0.9em; color: #555; }
+    .offsets { font-size: 0.9em; color: #333; margin-bottom: 1em; }
+    .section { margin-bottom: 2em; }
+    .photorow { display: flex; gap: 1em; align-items: flex-start; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <h1>Project 2: </h1>
+
+  <div class="section">
+    <h2>Part 1.1: Convolutions from Scratch!</h2>
+    <p>
+      We implemented 2D convolution using only NumPy, with two approaches:
+      <ul>
+        <li><b>4-loop implementation:</b> Explicitly loops over every pixel and kernel element.</li>
+        <li><b>2-loop implementation:</b> Loops over pixels, but uses NumPy's vectorized <code>sum</code> over the local window.</li>
+      </ul>
+    </p>
+
+    <h3>Code Implementations</h3>
+    <pre><code>
+  def conv_4loops(im, kernel):
+      pad_h, pad_w = kernel.shape[0] // 2, kernel.shape[1] // 2
+      padded_im = np.pad(im, ((pad_h, pad_h), (pad_w, pad_w)), mode='constant', constant_values=0)
+      out = np.zeros_like(im)
+
+      for i in range(im.shape[0]):
+          for j in range(im.shape[1]):
+              val = 0
+              for di in range(-pad_h, pad_h + 1):
+                  for dj in range(-pad_w, pad_w + 1):
+                      val += padded_im[i + pad_h + di, j + pad_w + dj] * kernel[di + pad_h, dj + pad_w]
+              out[i, j] = val
+      return out
+
+  def conv_2loops(im, kernel):
+      pad_h, pad_w = kernel.shape[0] // 2, kernel.shape[1] // 2
+      padded_im = np.pad(im, ((pad_h, pad_h), (pad_w, pad_w)), mode='constant', constant_values=0)
+      out = np.zeros_like(im)
+
+      for i in range(im.shape[0]):
+          for j in range(im.shape[1]):
+              out[i, j] = np.sum(padded_im[i:i + 2 * pad_h + 1, j:j + 2 * pad_w + 1] * kernel)
+      return out
+    </code></pre>
+
+    <h3>Runtime Comparison</h3>
+    <p>On a 2019x1658 image with a 9x9 kernel, the runtimes were:</p>
+    <ul>
+      <li>4-loops: <b>1 min 20 s</b></li>
+      <li>2-loops: <b>14.3 s</b></li>
+      <li>scipy.signal.convolve2d: <b>0.45 s</b></li>
+    </ul>
+    <p>
+      The large performance gap highlights the importance of vectorization and optimized libraries. 
+      The <code>scipy</code> implementation is much faster because it uses highly optimized C code under the hood.
+    </p>
+
+    <h3>Boundary Handling</h3>
+    <p>
+      We pad the image with zeros so that convolution near the edges includes fewer valid pixels. This is equivalent to the
+      <code>mode="same"</code> and <code>boundary="fill"</code> settings in scipy.
+    </p>
+
+    <h3>Results</h3>
+    <div class="photorow">
+      <div>
+        <img src="out/part1_boxfilter_2loops.jpg" alt="Box filter result (2 loops)">
+        <div class="caption">Box filter (2 loops)</div>
+      </div>
+      <div>
+        <img src="out/part1_dx_2loops.jpg" alt="Gradient x (2 loops)">
+        <div class="caption">Gradient in x (2 loops)</div>
+      </div>
+      <div>
+        <img src="out/part1_dy_2loops.jpg" alt="Gradient y (2 loops)">
+        <div class="caption">Gradient in y (2 loops)</div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="section">
+    <h2>Part 1.2: Finite difference operator</h2>
+    <p>
+      We want to find edges in the cameraman image using the finite difference operator.
+      To do so, we convolve the image with: <br>
+      <code>
+      D_x = [[-1, 0, 1]], D_y = [[-1], [0], [1]]
+      </code>
+    </p>
+
+    <div class="photorow">
+      <div>
+        <img src="out/cameraman.png" alt="Cameraman Gradient in x direction">
+        <div class="caption">Cameraman</div>
+      </div>
+      <div>
+        <img src="out/cameraman_Ix.png" alt="Cameraman Gradient in x direction">
+        <div class="caption">Cameraman Gradient in x direction</div>
+      </div>
+      <div>
+        <img src="out/cameraman_Iy.png" alt="Cameraman Gradient in y direction">
+        <div class="caption">Cameraman Gradient in y direction</div>
+      </div>
+    </div>
+
+    <p>
+      To turn into a gradient image, we compute the magnitude of the gradients in both directions,
+      <code>
+      cameraman_grad = sqrt(Ix^2 + Iy^2)
+      </code>
+      where Ix and Iy are the results of the convolution with D_x and D_y respectively.
+    </p>
+    <p>
+      We then turn into an edge image, by thresholding the gradient image. We set all values
+      below a certain threshold to zero. I chose 0.25 since it seems like it minimzed noise,
+      with much of the grass not showing up in the edge image.
+      The resulting edge image is shown below:
+    </p>
+    <div class="photorow">
+      <div>
+        <img src="out/cameraman_grad.png" alt="Cameraman Gradient Magnitude">
+        <div class="caption">Cameraman Gradient Magnitude</div>
+      </div>
+      <div>
+        <img src="out/cameraman_edge.png" alt="Cameraman Edge Image">
+        <div class="caption">Cameraman Edge Image, threshold=0.25</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Part 1.3: Difference of Gaussian filters</h2>
+    <p>
+      The previous edge image is somewhat noisy. To remedy that, we can first apply a gaussian blur to the image,
+      before finding the gradient. However, it turns out that since convolutions are associative, we can convolve our
+      <code>D_x</code> and <code>D_y</code> operators with a Gaussian kernel, and use the resulting
+      Difference of Gaussian operator instead.
+    </p>
+    <div class="photorow">
+      <div>
+        <img src="out/cameraman_blur_grad.png">
+        <div class="caption">Blur, then gradient</div>
+      </div>
+      <div>
+        <img src="out/cameraman_DoG.png">
+        <div class="caption">Difference of Gaussian</div>
+      </div>
+    </div>
+  </div>
+
+<div class="section">
+  <h2>Part 2.1: Image Sharpening</h2>
+  <p>
+    To sharpen an image, we use the <b>unsharp mask filter</b>. 
+    The idea is simple:
+  </p>
+  <ol>
+    <li>First, blur the original image to remove high-frequency details.</li>
+    <li>Subtract the blurred image from the original to extract the <i>high-frequency</i> components (edges and fine details).</li>
+    <li>Add some scaled amount of these high-frequency details back to the original image. This enhances the edges, making the image look sharper.</li>
+  </ol>
+  <p>
+    Mathematically, the sharpened image can be written as:
+    <code>sharpened = original + α * (original − blurred)</code>,  
+    where α controls the sharpening strength. Higher α means stronger sharpening.
+  </p>
+
+  <h3>Taj Mahal Example</h3>
+  <p>
+    Below, we show the blurred version of the Taj Mahal image, the extracted high frequencies, 
+    and the final sharpened images at different α values.
+  </p>
+
+  <div class="photorow">
+    <div>
+      <img src="out/taj_original.jpg" alt="Original Taj Mahal">
+      <div class="caption">Original Taj Mahal</div>
+    </div>
+    <div>
+      <img src="out/taj_blurred.jpg" alt="Blurred Taj Mahal">
+      <div class="caption">Blurred Taj Mahal</div>
+    </div>
+    <div>
+      <img src="out/taj_highfreq.jpg" alt="High-Frequency Taj Mahal">
+      <div class="caption">Extracted High-Frequency Components</div>
+    </div>
+  </div>
+
+  <p>Applying different sharpening strengths:</p>
+  <div class="photorow">
+    <div>
+      <img src="out/taj_sharpen2.jpg" alt="Sharpened Taj Mahal α=2">
+      <div class="caption">Sharpened, α = 2</div>
+    </div>
+    <div>
+      <img src="out/taj_sharpen4.jpg" alt="Sharpened Taj Mahal α=4">
+      <div class="caption">Sharpened, α = 4</div>
+    </div>
+    <div>
+      <img src="out/taj_sharpen6.jpg" alt="Sharpened Taj Mahal α=6">
+      <div class="caption">Sharpened, α = 6</div>
+    </div>
+  </div>
+
+  <p>
+    As α increases, the edges and details become more pronounced. However, if α is too high, 
+    the image can start looking unnatural with strong halos around edges.
+  </p>
+
+  <p>
+    Another example, from a snowy day in Boston. One can see that as alpha increases, the small
+    variations that make up the halo of the lamp take on a weird, "crackly" look.
+  </p>
+  <div class="photorow">
+    <div>
+      <img src="out/frozen2_original.jpg" alt="Original Taj Mahal">
+      <div class="caption">Original</div>
+    </div>
+    <div>
+      <img src="out/frozen2_blurred.jpg" alt="Blurred Taj Mahal">
+      <div class="caption">Blurred</div>
+    </div>
+    <div>
+      <img src="out/frozen2_highfreq.jpg" alt="High-Frequency Taj Mahal">
+      <div class="caption">Extracted High-Frequency Components</div>
+    </div>
+  </div>
+    <div class="photorow">
+    <div>
+      <img src="out/frozen2_sharpen2.jpg">
+      <div class="caption">Sharpened, α = 2</div>
+    </div>
+    <div>
+      <img src="out/frozen2_sharpen4.jpg">
+      <div class="caption">Sharpened, α = 4</div>
+    </div>
+    <div>
+      <img src="out/frozen2_sharpen6.jpg">
+      <div class="caption">Sharpened, α = 6</div>
+    </div>
+  </div>
+</div>
+
+
+  <div class="section">
+    <h2>Part 2.2: Hybrid Images</h2>
+    <p>
+      Hybrid images combine the low frequencies of one image with the high frequencies of another. 
+      Up close, the high-frequency image dominates, while at a distance, the low-frequency image takes over, 
+      creating an optical illusion. This effect is achieved by:
+    </p>
+    <ol>
+      <li>Low-pass filtering one image to preserve only coarse features.</li>
+      <li>High-pass filtering another image to extract fine details.</li>
+      <li>Adding the two results together with an appropriate cutoff frequency.</li>
+    </ol>
+
+  <h3>Flag hybrids: Full Process</h3>
+  <p>We show the full pipeline for two images of me doing the human flag</p>
+  <div class="photorow">
+    <div>
+      <img src="out/flag_rsf1.jpg" alt="Original Flag RSF1">
+      <div class="caption">Human flag at RSF</div>
+    </div>
+    <div>
+      <img src="out/flag_bart.jpg" alt="Original Flag Bart">
+      <div class="caption">Human flag on the Bart</div>
+    </div>
+  </div>
+
+  <p>Next, we look at the Fourier transforms of both images:</p>
+  <div class="photorow">
+    <div>
+      <img src="out/flag_bart_fft.jpg" alt="Flag Bart FFT">
+      <div class="caption">Flag RSF FFT (Low-Frequency Image)</div>
+    </div>
+    <div>
+      <img src="out/flag_rsf1_fft.jpg" alt="Flag RSF1 FFT">
+      <div class="caption">Flag Bart FFT (High-Frequency Image)</div>
+    </div>
+  </div>
+
+  <p>
+    We apply a low-pass filter to Flag Bart and a high-pass filter to Flag RSF1. The cutoff frequency controls how much detail we keep from each image.
+    I also added an additional parameter <code>c</code> to control how much of the lower frequencies to remove, by doing
+    <code>high = im - c * blur</code>
+  </p>
+
+  <p>I chose <code>(sigma_high=3, sigma_low=4, c=0.3)</code> because that worked best empirically.</p>
+  <div class="photorow">
+    <div>
+      <img src="out/low_freq.jpg" alt="Low-pass Filtered Flag Bart">
+      <div class="caption">Low-pass Filtered Flag at RSF</div>
+    </div>
+    <div>
+      <img src="out/high_freq.jpg" alt="High-pass Filtered Flag RSF1">
+      <div class="caption">High-pass Filtered Flag on the Bart</div>
+    </div>
+  </div>
+  <div class="photorow">
+    <div>
+      <img src="out/low_freq_fft.jpg" alt="Low-pass Filtered Flag Bart">
+      <div class="caption">Low-pass Filtered FFT</div>
+    </div>
+    <div>
+      <img src="out/high_freq_fft.jpg" alt="High-pass Filtered Flag RSF1">
+      <div class="caption">High-pass Filtered FFT</div>
+    </div>
+  </div>
+
+  <p>
+    Note that the FFT of the low-pass filtered image is cross shaped --- since high frequencies correspond
+    to the corners of the FFT, those are filtered out and depicted as black.
+    The final hybrid image is obtained by taking their sum.
+  </p>
+  <div class="photorow">
+    <div>
+      <img src="out/hybrid_flag.jpg" alt="Hybrid Flag Bart + RSF1">
+      <div class="caption">Final Hybrid: Flag Bart + Flag RSF</div>
+    </div>
+    <div>
+      <img src="out/hybrid_flag_fft.jpg" alt="Hybrid FFT">
+      <div class="caption">Hybrid Image FFT</div>
+    </div>
+  </div>
+
+  <h3>Other Hybrid Images</h3>
+  <p>For the other hybrids, we only show the originals and final results:</p>
+
+  <h4>Derek + Nutmeg <code>(sigma_high=5, sigma_low=8, c=0.3)</code></h4>
+  <div class="photorow">
+    <div>
+      <img src="out/DerekPicture.jpg" alt="Original Derek">
+      <div class="caption">Original Derek</div>
+    </div>
+    <div>
+      <img src="out/nutmeg.jpg" alt="Original Nutmeg">
+      <div class="caption">Original Nutmeg</div>
+    </div>
+    <div>
+      <img src="out/hybrid_derek_nutmeg.jpg" alt="Hybrid Derek + Nutmeg">
+      <div class="caption">Hybrid: Derek + Nutmeg</div>
+    </div>
+  </div>
+
+  <h4>Me and David <code>(sigma_high=5, sigma_low=3, c=0.6)</code></h4>
+  <div class="photorow">
+    <div>
+      <img src="out/arctic1.jpg">
+      <div class="caption">Me</div>
+    </div>
+    <div>
+      <img src="out/arctic2.jpg">
+      <div class="caption">David</div>
+    </div>
+    <div>
+      <img src="out/hybrid_arctic.jpg" alt="David + Me">
+      <div class="caption">Me + David</div>
+    </div>
+  </div>
+  </div>
+
+  <div class="section">
+    <h2>Part 2.3 + 2.4: Multi-resolution Blending & The Oraple Journey</h2>
+
+    <p>
+      Multi-resolution blending builds a smoothly blended composite by combining information from different spatial
+      scales. The steps I used:
+    </p>
+    <ol>
+      <li>Build a Gaussian stack for each input image (progressively blur).</li>
+      <li>Form Laplacian layers by subtracting each Gaussian level from the next-coarser Gaussian.</li>
+      <li>Build a Gaussian stack for the mask (same sizes) and use mask levels to blend corresponding Laplacian levels.</li>
+      <li>Reconstruct the blended image by collapsing the blended Laplacian stack back to full resolution.</li>
+    </ol>
+
+    <p>
+      Below we show the Gaussian & Laplacian stacks for the Apple + Orange example and present two additional blended examples
+    </p>
+
+    <h3>Apple + Orange — Gaussian & Laplacian Stacks</h3>
+    <p>Gaussian levels and the Laplacian layers used for blending:</p>
+    <div class="photorow">
+      <div>
+        <img src="out/apple.jpeg" alt="Apple original">
+        <div class="caption">Apple</div>
+      </div>
+      <div>
+        <img src="out/orange.jpeg" alt="Orange original">
+        <div class="caption">Orange</div>
+      </div>
+      <div>
+        <img src="out/apple_orange_blended.jpg" alt="Orange original">
+        <div class="caption">Oraple</div>
+      </div>
+    </div>
+
+
+    <div style="size: 50vw;">
+      <img src="out/apple_orange_laplace_fig.png"  class="big-pic">
+      <div class="caption">Apple + Orange: Gaussian & Laplacian stacks and blended reconstructions (Figure 3.42 (a)–(l) reproduction)</div>
+    </div>
+
+    <h3>Standard Blend</h3>
+    <p>
+      A second example blends the following with a simple horizontal mask.
+      We show the originals and the final multi-resolution blended result.
+    </p>
+    <div class="photorow">
+      <div>
+        <img src="out/frozen2.jpg" alt="Frozen2 original">
+        <div class="caption">Pic 1</div>
+      </div>
+      <div>
+        <img src="out/frozen3.jpg" alt="Frozen3 original">
+        <div class="caption">Pic 2</div>
+      </div>
+      <div>
+        <img src="out/frozen2_frozen3_blended.jpg" alt="Frozen2+Frozen3 blended">
+        <div class="caption">Multi-resolution blend</div>
+      </div>
+    </div>
+
+    <h3>The quarter of my eye - Irregular Mask Blend</h3>
+    <p>
+      For the third example we use an <b>irregular mask</b> (not straight lines).
+    </p>
+    <div class="photorow">
+      <div>
+        <img src="out/quarter.jpg" alt="Quarter original">
+        <div class="caption">Quarter (original)</div>
+      </div>
+      <div>
+        <img src="out/quarter_mask.jpg" alt="Irregular mask">
+        <div class="caption">Irregular mask (used for blending)</div>
+      </div>
+      <div>
+        <img src="out/yifan_tahoe.jpg" alt="Yifan Tahoe original">
+        <div class="caption">Me (original)</div>
+      </div>
+
+      <div>
+        <img src="out/quarter_yifan_tahoe_blended.jpg" alt="Quarter + Yifan Tahoe blended">
+        <div class="caption">Quarter + Me (blended result)</div>
+      </div>
+    </div>
+    <div>
+      <img src="out/quarter_yifan_tahoe_laplace_fig.png" class="big-pic">
+      <div class="caption">Laplacian stack visualization (replicated figure)</div>
+    </div>
+  </div>
+
+</body>
+</html>
