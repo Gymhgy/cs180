@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 2: Fun with Filters and Frequencies</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    h1, h2, h3 { margin-top: 2em; }
+    img { max-width: 300px; height: auto; border: 1px solid #ccc; }
+    .big-pic { max-width: 50vw; }
+    .caption { font-size: 0.9em; color: #555; }
+    .offsets { font-size: 0.9em; color: #333; margin-bottom: 1em; }
+    .section { margin-bottom: 2em; }
+    .photorow { display: flex; gap: 1em; align-items: flex-start; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <h1>Project 3: Image Warping and Mosaicing</h1>
+
+  <div class="section">
+    <h2>Part A.1: Shoot the Pictures</h2>
+
+    <p>All taken at Berkeley Way West.</p>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bww41.jpg">
+        <div class="caption">bww41</div>
+      </div>
+      <div>
+        <img src="out/bww42.jpg">
+        <div class="caption">bww42</div>
+      </div>
+      <div>
+        <img src="out/bww43.jpg">
+        <div class="caption">bww43</div>
+      </div>
+    </div>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bair51.jpg">
+        <div class="caption">bair51</div>
+      </div>
+      <div>
+        <img src="out/bair52.jpg">
+        <div class="caption">bair52</div>
+      </div>
+      <div>
+        <img src="out/bair53.jpg">
+        <div class="caption">bair53</div>
+      </div>
+    </div>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bww31.jpg">
+        <div class="caption">bww31</div>
+      </div>
+      <div>
+        <img src="out/bww32.jpg">
+        <div class="caption">bww32</div>
+      </div>
+    </div>
+  </div>
+
+
+  
+  <div class="section">
+    <h2>Part A.2: Recover Homographies</h2>
+
+    <p>
+      Before warping your images into alignment, you need to recover the homography parameters. 
+      The transformation is a homography: p’ = Hp, where H is a 3x3 matrix with 8 degrees of freedom 
+      (lower-right corner is a scaling factor, set to 1). One way to recover the homography is via 
+      a set of (p’, p) pairs of corresponding points from the two images.
+    </p>
+
+    <p>Function implemented:</p>
+    <pre><code>H = computeH(im1_pts, im2_pts)</code></pre>
+    <p>where <code>im1_pts</code> and <code>im2_pts</code> are n-by-2 matrices holding the (x,y) 
+    coordinates of corresponding points.</p>
+
+    <p>
+      With n > 4, the system is overdetermined and can be solved via least-squares. Establishing 
+      point correspondences is sensitive: small errors can produce large changes in the homography. 
+      Typical methods include matplotlib's <code>ginput</code>, online tools, or image editors showing coordinates.
+    </p>
+
+    <h3>Correspondences Visualized</h3>
+    <div>
+      <img src="out/correspondences.png" class="big-pic">
+      <div class="caption">Point correspondences used to compute H</div>
+    </div>
+
+    <h3>Recovered Homography Matrix</h3>
+    <pre><code>
+  [[ 4.90792521e-01 -3.03338445e-01  1.61928810e+02]
+  [-9.46260426e-02  4.84863462e-01  2.56664447e+02]
+  [-1.41222136e-04 -2.10643213e-04  1.00000000e+00]]
+    </code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Part A.3: Warp the Images</h2>
+
+    <p>
+      Using the recovered homography, we can warp each image towards a reference image. 
+      Two interpolation methods were implemented from scratch using inverse warping:
+    </p>
+    <ul>
+      <li><strong>Nearest Neighbor Interpolation:</strong> Round coordinates to the nearest pixel.</li>
+      <li><strong>Bilinear Interpolation:</strong> Weighted average of four neighboring pixels.</li>
+    </ul>
+
+    <p>
+      These methods were applied for rectification and general warping. Trade-offs: Nearest neighbor is fast but blocky; bilinear is smoother but slower.
+    </p>
+
+    <h3>Big Topic Intro Image Pre-Warp</h3>
+    <div class="photos">
+      <div>
+        <img src="out/big_topic_intro_prewarp.png" class="big-pic">
+        <div class="caption">Pre-warp image</div>
+      </div>
+    </div>
+
+    <h3>Big Topic Intro Warps</h3>
+    <div class="photos">
+      <div>
+        <img src="out/big_topic_intro_nn_warp.jpg" class="big-pic">
+        <div class="caption">Nearest Neighbor Warp</div>
+      </div>
+      <div>
+        <img src="out/big_topic_intro_bilinear_warp.jpg" class="big-pic">
+        <div class="caption">Bilinear Warp</div>
+      </div>
+    </div>
+
+    <h3>Foam Room Image Pre-Warp</h3>
+    <div class="photos">
+      <div>
+        <img src="out/foam_room_prewarp.png" class="big-pic">
+        <div class="caption">Pre-warp image</div>
+      </div>
+    </div>
+
+    <h3>Foam Room Warps</h3>
+    <div class="photos">
+      <div>
+        <img src="out/foam_room_nn_warp.jpg" class="big-pic">
+        <div class="caption">Nearest Neighbor Warp</div>
+      </div>
+      <div>
+        <img src="out/foam_room_bilinear_warp.jpg" class="big-pic">
+        <div class="caption">Bilinear Warp</div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="section">
+    <h2>Part A.4: Blend the Images into a Mosaic</h2>
+
+    <p>
+      After warping the images using the recovered homographies, we create mosaics to stitch multiple images 
+      seamlessly. Instead of simply overlaying images—which can produce strong edge artifacts—we use a 
+      blending approach based on weighted averaging.
+    </p>
+
+    <p><strong>Procedure:</strong></p>
+    <ol>
+      <li>
+        <strong>Reference frame selection:</strong> Choose one image as the reference coordinate frame. All other images are warped relative to this reference.
+      </li>
+      <li>
+        <strong>Propagate homographies:</strong> For images left of the reference, chain the homographies from each adjacent pair to map them into the reference frame. For images right of the reference, propagate inverses of homographies similarly. This ensures all images are consistently aligned.
+      </li>
+      <li>
+        <strong>Compute canvas bounds:</strong> Transform the corners of all images using their respective homographies to determine the overall size of the mosaic canvas.
+      </li>
+      <li>
+        <strong>Warp images onto the canvas:</strong> Each image is warped into the canvas using bilinear interpolation. This preserves smooth transitions and reduces artifacts.
+      </li>
+      <li>
+        <strong>Blending:</strong> Use a mask for each warped image to identify valid pixels. Combine overlapping pixels using weighted averaging. Pixels near the center of each image can have higher weight, gradually decreasing towards the edges. This reduces visible seams and ghosting.
+      </li>
+    </ol>
+
+    <h3>Mosaic Set 1: bww41, bww42, bww43</h3>
+    <div class="photorow">
+      <img src="out/bww41.jpg" class="big-pic">
+      <img src="out/bww42.jpg" class="big-pic">
+      <img src="out/bww43.jpg" class="big-pic">
+    </div>
+    <div>
+      <img src="out/bww4_mosaic.jpg" class="big-pic">
+      <div class="caption">Mosaic of bww41, bww42, bww43 using weighted blending</div>
+    </div>
+
+    <h3>Mosaic Set 2: bair51, bair52, bair53</h3>
+    <div class="photorow">
+      <img src="out/bair51.jpg" class="big-pic">
+      <img src="out/bair52.jpg" class="big-pic">
+      <img src="out/bair53.jpg" class="big-pic">
+    </div>
+    <div>
+      <img src="out/bair5_mosaic.jpg" class="big-pic">
+      <div class="caption">Mosaic of bair51, bair52, bair53 using weighted blending</div>
+    </div>
+
+    <h3>Mosaic Set 3: bww31, bww32</h3>
+    <div class="photorow">
+      <img src="out/bww31.jpg" class="big-pic">
+      <img src="out/bww32.jpg" class="big-pic">
+    </div>
+    <div>
+      <img src="out/bww3_mosaic.jpg" class="big-pic">
+      <div class="caption">Mosaic of bww31, bww32 using weighted blending</div>
+    </div>
+
+    <p>
+      By combining careful homography propagation, precise warping, and weighted blending, the mosaics 
+      maintain geometric consistency and reduce visible seams, resulting in a smooth final image.
+    </p>
+  </div>
+
+
+</body>
+</html>
