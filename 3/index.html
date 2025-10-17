@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Project 2: Fun with Filters and Frequencies</title>
+  <title>Project 3: [Auto]Stitching Photo Mosaics</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 2em; }
     h1, h2, h3 { margin-top: 2em; }
     img { max-width: 300px; height: auto; border: 1px solid #ccc; }
+    .med-pic { max-width: 450px; height: auto; border: 1px solid #ccc; }
+
     .big-pic { max-width: 50vw; }
     .caption { font-size: 0.9em; color: #555; }
     .offsets { font-size: 0.9em; color: #333; margin-bottom: 1em; }
@@ -15,7 +17,7 @@
   </style>
 </head>
 <body>
-  <h1>Project 3: Image Warping and Mosaicing</h1>
+  <h1>Project 3A: Image Warping and Mosaicing</h1>
 
   <div class="section">
     <h2>Part A.1: Shoot the Pictures</h2>
@@ -64,8 +66,6 @@
     </div>
   </div>
 
-
-  
   <div class="section">
     <h2>Part A.2: Recover Homographies</h2>
 
@@ -126,13 +126,13 @@
     </div>
 
     <h3>Big Topic Intro Warps</h3>
-    <div class="photos">
+    <div class="photorow">
       <div>
-        <img src="out/big_topic_intro_nn_warp.jpg" class="big-pic">
+        <img src="out/big_topic_intro_nn_warp.jpg" class="med-pic">
         <div class="caption">Nearest Neighbor Warp</div>
       </div>
       <div>
-        <img src="out/big_topic_intro_bilinear_warp.jpg" class="big-pic">
+        <img src="out/big_topic_intro_bilinear_warp.jpg" class="med-pic">
         <div class="caption">Bilinear Warp</div>
       </div>
     </div>
@@ -146,19 +146,18 @@
     </div>
 
     <h3>Foam Room Warps</h3>
-    <div class="photos">
+    <div class="photorow">
       <div>
-        <img src="out/foam_room_nn_warp.jpg" class="big-pic">
+        <img src="out/foam_room_nn_warp.jpg" class="med-pic">
         <div class="caption">Nearest Neighbor Warp</div>
       </div>
       <div>
-        <img src="out/foam_room_bilinear_warp.jpg" class="big-pic">
+        <img src="out/foam_room_bilinear_warp.jpg" class="med-pic">
         <div class="caption">Bilinear Warp</div>
       </div>
     </div>
 
   </div>
-
 
   <div class="section">
     <h2>Part A.4: Blend the Images into a Mosaic</h2>
@@ -190,40 +189,131 @@
 
     <h3>Mosaic Set 1: bww41, bww42, bww43</h3>
     <div class="photorow">
-      <img src="out/bww41.jpg" class="big-pic">
-      <img src="out/bww42.jpg" class="big-pic">
-      <img src="out/bww43.jpg" class="big-pic">
+      <img src="out/bww41.jpg">
+      <img src="out/bww42.jpg">
+      <img src="out/bww43.jpg">
     </div>
     <div>
       <img src="out/bww4_mosaic.jpg" class="big-pic">
-      <div class="caption">Mosaic of bww41, bww42, bww43 using weighted blending</div>
     </div>
 
     <h3>Mosaic Set 2: bair51, bair52, bair53</h3>
     <div class="photorow">
-      <img src="out/bair51.jpg" class="big-pic">
-      <img src="out/bair52.jpg" class="big-pic">
-      <img src="out/bair53.jpg" class="big-pic">
+      <img src="out/bair51.jpg">
+      <img src="out/bair52.jpg">
+      <img src="out/bair53.jpg">
     </div>
     <div>
       <img src="out/bair5_mosaic.jpg" class="big-pic">
-      <div class="caption">Mosaic of bair51, bair52, bair53 using weighted blending</div>
     </div>
 
     <h3>Mosaic Set 3: bww31, bww32</h3>
     <div class="photorow">
-      <img src="out/bww31.jpg" class="big-pic">
-      <img src="out/bww32.jpg" class="big-pic">
+      <img src="out/bww31.jpg">
+      <img src="out/bww32.jpg">
     </div>
     <div>
       <img src="out/bww3_mosaic.jpg" class="big-pic">
-      <div class="caption">Mosaic of bww31, bww32 using weighted blending</div>
     </div>
+  </div>
+
+  <h1>Project 3B: Feature Matching for Autostitching</h1>
+
+  <!-- Part B: Feature Matching for Autostitching -->
+  <div class="section">
+    <h2>Part B.1: Harris Corner Detection</h2>
+
+    <p>Harris corners detected (single-scale) and ANMS-selected corners shown below.</p>
 
     <p>
-      By combining careful homography propagation, precise warping, and weighted blending, the mosaics 
-      maintain geometric consistency and reduce visible seams, resulting in a smooth final image.
+      Note that before suppression, there are many detected corners, as we take the max
+      "cornerness" over a 3x3 neighborhood. To make computation of ANMS manageable, we filter out points that have
+      below average cornerness. After applying ANMS (Adaptive Non-Maximal Suppression),
+      we select a more manageable number of well-distributed corners for descriptor extraction and matching.
     </p>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bww31_harris.png" class="big-pic">
+        <div class="caption">Harris corners overlaid on bww31</div>
+      </div>
+      <div>
+        <img src="out/bww31_anms.png" class="big-pic">
+        <div class="caption">ANMS-selected corners on bww31</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Part B.2: Feature Descriptor Extraction</h2>
+
+    <p>Example extracted, bias/gain-normalized 8×8 descriptors (downsampled from 40×40 windows centered on each corner).</p>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bww31_feature_descriptions.png" class="big-pic">
+        <div class="caption">Sample feature descriptors from bww31 (8×8 visualizations)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Part B.3: Feature Matching</h2>
+
+    <p>
+      Matches between image pairs using Lowe's heuristic. I used a threshold of 0.5,
+      meaning the distance to the closest descriptor must be less than half the distance to the second-closest
+      descriptor to be considered a match.
+    </p>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bww31_bww32_matches.png" class="big-pic">
+        <div class="caption">Matched features between bww31 and bww32</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Part B.4: RANSAC for Robust Homography</h2>
+
+    <p>4-point RANSAC used to compute robust homographies. Below: manual stitching vs automatic (RANSAC-based) stitching comparisons and automatic mosaics.</p>
+
+    <h3>Manual vs Automatic Comparison</h3>
+    <div class="photorow">
+      <div>
+        <img src="out/bww3_mosaic.jpg" class="med-pic">
+        <div class="caption">Manual mosaic (bww31, bww32)</div>
+      </div>
+      <div>
+        <img src="out/bww3_mosaic_auto.jpg" class="med-pic">
+        <div class="caption">Automatic mosaic via feature matching + RANSAC (bww31, bww32)</div>
+      </div>
+    </div>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bww4_mosaic.jpg" class="med-pic">
+        <div class="caption">Manual mosaic (bww41, bww42, bww43)</div>
+      </div>
+      <div>
+        <img src="out/bww4_mosaic_auto.jpg" class="med-pic">
+        <div class="caption">Automatic mosaic via feature matching + RANSAC (bww41, bww42, bww43)</div>
+      </div>
+    </div>
+
+    <div class="photorow">
+      <div>
+        <img src="out/bair5_mosaic.jpg" class="med-pic">
+        <div class="caption">Manual mosaic (bair51, bair52, bair53)</div>
+      </div>
+      <div>
+        <img src="out/bair5_mosaic_auto.jpg" class="med-pic">
+        <div class="caption">Automatic mosaic via feature matching + RANSAC (bair51, bair52, bair53)</div>
+      </div>
+    </div>
+
+    <p>Three automatic mosaics produced using the pipeline above (feature detection → descriptor extraction → NN-ratio matching → 4-point RANSAC → warp & blend).</p>
   </div>
 
 
