@@ -182,20 +182,39 @@
       <li>
         <strong>Warp images onto the canvas:</strong> Each image is warped into the canvas using bilinear interpolation. This preserves smooth transitions and reduces artifacts.
       </li>
-      <li>
-        <strong>Blending:</strong> Use a mask for each warped image to identify valid pixels. Combine overlapping pixels using weighted averaging. Pixels near the center of each image can have higher weight, gradually decreasing towards the edges. This reduces visible seams and ghosting.
-      </li>
     </ol>
 
-    <h3>Mosaic Set 1: bww41, bww42, bww43</h3>
+    <p>
+      <strong>Blending:</strong> In overlapping regions, we apply feathered alpha blending.
+      As images are added, we feather the edges (50 pixels of the border) of the new image to create a smooth transition.
+      This weighted averaging is only applied to pixels that overlap with existing content on the canvas.
+      This creates smooth transitions between images, minimizing visible seams.
+    </p>
+
+    <h3>Mosaic Set 1: bww41, bww42, bww43 (with feathering example)</h3>
     <div class="photorow">
       <img src="out/bww41.jpg">
       <img src="out/bww42.jpg">
       <img src="out/bww43.jpg">
     </div>
+    <div class="photorow">
+      <img src="out/bww4_step1.png">
+      <img src="out/bww4_step2.png">
+      <img src="out/bww4_step3.png">
+    </div>
+    <div class="photorow">
+      <div>
+        <img src="out/bww4_feather1.png" class="med-pic">
+        <div class="caption">Feathered alpha masks</div>
+      </div>
+      <img src="out/bww4_feather2.png" class="med-pic">
+    </div>
+
+    <br>
     <div>
       <img src="out/bww4_mosaic.jpg" class="big-pic">
     </div>
+
 
     <h3>Mosaic Set 2: bair51, bair52, bair53</h3>
     <div class="photorow">
