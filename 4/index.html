@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 4: Neural Radiance Fields</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    h1, h2, h3 { margin-top: 2em; }
+    img { max-width: 300px; height: auto; border: 1px solid #ccc; }
+    .med-pic { max-width: 450px; height: auto; border: 1px solid #ccc; }
+
+    .big-pic { max-width: 50vw; }
+    .caption { font-size: 0.9em; color: #555; }
+    .offsets { font-size: 0.9em; color: #333; margin-bottom: 1em; }
+    .section { margin-bottom: 2em; }
+    .photorow { display: flex; gap: 1em; align-items: flex-start; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+  <h1>Project 4: Neural Radiance Field!</h1>
+
+  <h2>Part 0: Camera Calibration and 3D Scanning</h2>
+
+  <p>
+    In this part, we calibrated our phone cameras using Aruco tags to get the intrinsic matrix and distortion coefficients.
+    We then used the calibrated cameras to capture a bunch of images of an object from different angles.
+  </p>
+  <div class="photorow">
+    <img src="out/own_viser1.png" class="med-pic">
+    <img src="out/own_viser2.png" class="med-pic">
+  </div>
+
+  <h2>Part 1: Fit a Neural Field to a 2D Image</h2>
+
+  <div class="section">
+    <p>
+      We fit an MLP-based neural field to 2D images using sinusoidal positional encoding, random pixel sampling, and MSE loss with Adam (lr = 1e-2). Additionally, I used 3 hidden layers, and a width of 256. Below are the progression results, PSNR curves, and hyperparameter comparisons.
+    </p>
+
+    <h3>Training Progression — Fox</h3>
+    <div class="photorow">
+      <img src="out/1/fox_progressions.png" class="big-pic">
+    </div>
+
+    <h3>PSNR Curve — Fox</h3>
+    <div class="photorow">
+      <img src="out/1/fox_psnr.png" class="med-pic">
+    </div>
+
+    <h3>Hyperparameter Comparison</h3>
+    <div class="photorow">
+      <img src="out/1/fox_hyperparams.png" class="big-pic">
+    </div>
+    <p class="caption">
+      Final reconstructions for: L = 2 vs L = 10, and width = 32 vs width = 256.  
+      <br>
+      The top row (L = 2) shows blurry results, while the bottom row (L = 10) captures more details.
+      Having a low width is less impactful than having a low L, but it still results in blurrier images.
+    </p>
+    <h3>Tahoe</h3>
+    <img src="out/1/tahoe_progressions.png" class="big-pic">
+
+    <div class="photorow">
+      <img src="out/1/tahoe_final.png" class="med-pic">
+      <img src="out/1/tahoe_psnr.png" class="med-pic">
+    </div>
+
+  </div>
+
+
+  <h2>Part 2: Fit a Neural Radiance Field from Multi-view Images</h2>
+
+  <h3>Part 2.1: Create Rays from Cameras and 2.2: Sampling</h3>
+  <p>
+    First, we implement a <code>transform</code> function that transforms a point from camera coordinates to the world coordinates using the camera's extrinsic parameters. Then, we implement a <code>pixel_to_camera</code> function that converts pixel coordinates to camera coordinates using the intrinsic parameters.
+  </p>
+
+  <p>
+    After that, we implement a <code>pixel_to_ray</code> function that converts pixel coordinates to rays in world coordinates. This function returns both the ray origins and directions. The ray origins are the camera centers, and the ray directions are computed by transforming the pixel coordinates to camera coordinates and then to world coordinates.
+    <br>
+    We can then sample points along the ray by taking points between two bounds (near and far).
+  </p>
+
+  <h3>Part 2.3: Dataloading</h3>
+  <p>
+    Here is a visualization of how sampling works, w/ 100 rays on the lego dataset:
+  </p>
+
+  <img src="out/2/lego_viser.png" class="med-pic">
+
+
+  <h3>Part 2.4: Neural Radiance Field</h3>
+  <p>
+    We implement a NeRF MLP (architecture shown below). Our input is a 3D world coordinate as well as a ray direction.
+    We output both a density and a color, so we can compute the final color of a ray by integrating along the ray later on during
+    volume rendering.
+  </p>
+  <img src="out/part2_architecture.png" class="med-pic">
+
+  <h3>Part 2.5: Volume Rendering</h3>
+  <p>
+    We approximate the volume rendering integral using a discrete sum. The formula is shown below, where c_i is the color at point i, sigma_i is the density at point i, and delta_i is the distance between point i and the next point along the ray.
+  </p>
+  <img src="out/vol_eq.png" class="med-pic">
+
+
+  <h3>Putting it all together</h3>
+
+  <p>
+    The validation PSNR goes slightly above 23 (to 23.08) at some point, but then the model overfits a bit and the PSNR drops below 23 at the end of training.
+  </p>
+
+  <img src="out/2/lego_progressions.png" class="big-pic">
+  <div class="photorow">
+    <img src="out/2/lego_train_loss.png" class="med-pic">
+    <img src="out/2/lego_psnr.png" class="med-pic">
+  </div>
+
+  <video src="out/2/lego_spherical.mp4" loop autoplay></video>
+
+  <h2>Part 2.6: Training with Your Own Data</h2>
+
+  <p>This time, we train a NeRF on our own images. I increased the sample per ray to 64, and kept everything else the same. I also set the near / far parameters to 0.02 and 0.5.</p>
+
+  <img src="out/2/my_data_progressions.png" class="big-pic">
+  <div class="photorow">
+    <img src="out/2/my_data_train_loss.png" class="med-pic">
+  </div>
+  <div class="photorow">
+    <video src="out/2/my_data_spherical.mp4" loop autoplay></video>
+    <video src="out/2/my_data_orbit.mp4" loop autoplay></video>
+  </div>
+
+  <p>Not great, but can make out the general shape / tags. Unfortunately did not have enough time as I'd have liked to tune hyperparameters, so there is definitely room for improvement.</p>
+</body>
+</html>
